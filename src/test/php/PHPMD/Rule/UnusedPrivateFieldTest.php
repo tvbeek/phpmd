@@ -18,6 +18,7 @@
 namespace PHPMD\Rule;
 
 use PHPMD\AbstractTest;
+use PHPMD\Node\ClassNode;
 
 /**
  * Test case for the unused private field rule.
@@ -27,256 +28,48 @@ use PHPMD\AbstractTest;
 class UnusedPrivateFieldTest extends AbstractTest
 {
     /**
-     * testRuleAppliesToUnusedPrivateField
+     * Get the rule under test.
      *
-     * @return void
+     * @return UnusedPrivateField
      */
-    public function testRuleAppliesToUnusedPrivateField()
+    public function getRule()
     {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
+        return new UnusedPrivateField();
     }
 
     /**
-     * testRuleAppliesToUnusedPrivateStaticField
+     * Tests the rule for cases where it should apply.
      *
+     * @param string $file The test file to test against.
      * @return void
+     * @dataProvider getApplyingCases
      */
-    public function testRuleAppliesWhenFieldWithSameNameIsAccessedOnDifferentObject()
+    public function testRuleAppliesTo($file)
     {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
+        $this->expectRuleHasViolationsForFile($this->getRule(), static::ONE_VIOLATION, $file);
     }
 
     /**
-     * testRuleAppliesToUnusedPrivateStaticField
+     * Tests the rule for cases where it should not apply.
      *
+     * @param string $file The test file to test against.
      * @return void
+     * @dataProvider getNotApplyingCases
      */
-    public function testRuleAppliesToUnusedPrivateStaticField()
+    public function testRuleDoesNotApplyTo($file)
     {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
+        $this->expectRuleHasViolationsForFile($this->getRule(), static::NO_VIOLATION, $file);
     }
 
     /**
-     * testRuleAppliesWhenStaticFieldWithSameNameIsAccessedOnDifferentClass
+     * Get the class node from the given test file.
      *
-     * @return void
+     * @param string $file
+     *
+     * @return ClassNode
      */
-    public function testRuleAppliesWhenStaticFieldWithSameNameIsAccessedOnDifferentClass()
+    protected function getNodeForTestFile($file)
     {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleAppliesWhenStaticFieldWithSameNameIsAccessedOnParent
-     *
-     * @return void
-     */
-    public function testRuleAppliesWhenStaticFieldWithSameNameIsAccessedOnParent()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleAppliesWhenLocalVariableIsUsedInStaticMemberPrefix
-     *
-     * <code>
-     * class Foo {
-     *     private static $_bar = null;
-     *
-     *     public function baz() {
-     *         self::${$_bar = '_bar'} = 42;
-     *     }
-     * }
-     * </code>
-     *
-     * @return void
-     */
-    public function testRuleAppliesWhenLocalVariableIsUsedInStaticMemberPrefix()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleAppliesWhenLocalVariableIsUsedInStaticMemberPrefix
-     *
-     * <code>
-     * class Foo {
-     *     private static $_bar = null;
-     *
-     *     public function baz() {
-     *         self::${'_bar'} = 42;
-     *     }
-     * }
-     * </code>
-     *
-     * @return void
-     */
-    public function testRuleDoesNotResultInFatalErrorByCallingNonObject()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithOneViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToUnusedPublicField
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToUnusedPublicField()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToUnusedProtectedField
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToUnusedProtectedField()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToThisAccessedPrivateField
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToThisAccessedPrivateField()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToSelfAccessedPrivateField
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToSelfAccessedPrivateField()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToStaticAccessedPrivateField
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToStaticAccessedPrivateField()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToClassNameAccessedPrivateField
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToClassNameAccessedPrivateField()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToPrivateFieldInChainedMethodCall
-     *
-     * <code>
-     * class Foo {
-     *     private $bar = null;
-     *     // ...
-     *     public function baz() {
-     *         $this->bar->foobar();
-     *     }
-     * }
-     * </code>
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToPrivateFieldInChainedMethodCall()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToPrivateArrayFieldAccess
-     *
-     * <code>
-     * class Foo {
-     *     private $bar = array();
-     *     // ...
-     *     public function baz() {
-     *         return $this->bar[42];
-     *     }
-     * }
-     * </code>
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToPrivateArrayFieldAccess()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToPrivateStringIndexFieldAccess
-     *
-     * <code>
-     * class Foo {
-     *     private $bar = "Manuel";
-     *     // ...
-     *     public function baz() {
-     *         return $this->bar{3};
-     *     }
-     * }
-     * </code>
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToPrivateStringIndexFieldAccess()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
-    }
-
-    /**
-     * testRuleDoesNotApplyToFieldWithMethodsThatReturnArray
-     *
-     * @return void
-     */
-    public function testRuleDoesNotApplyToFieldWithMethodsThatReturnArray()
-    {
-        $rule = new UnusedPrivateField();
-        $rule->setReport($this->getReportWithNoViolation());
-        $rule->apply($this->getClass());
+        return $this->getClassNodeForTestFile($file);
     }
 }

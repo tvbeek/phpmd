@@ -43,7 +43,7 @@ use PHPUnit_Framework_MockObject_MockObject;
 abstract class AbstractTest extends AbstractStaticTest
 {
     /** @var int At least one violation is expected */
-    const AL_LEAST_ONE_VIOLATION = -1;
+    const AT_LEAST_ONE_VIOLATION = -1;
 
     /** @var int No violation is expected */
     const NO_VIOLATION = 0;
@@ -60,7 +60,7 @@ abstract class AbstractTest extends AbstractStaticTest
      */
     public function getApplyingFiles()
     {
-        return $this->getFilesForCalledClass('testRuleAppliesTo*');
+        return $this->getFilesForCalledClass('testRuleApplies*');
     }
 
     /**
@@ -72,7 +72,7 @@ abstract class AbstractTest extends AbstractStaticTest
      */
     public function getNotApplyingFiles()
     {
-        return $this->getFilesForCalledClass('testRuleDoesNotApplyTo*');
+        return $this->getFilesForCalledClass('testRuleDoesNotApply*');
     }
 
     /**
@@ -204,6 +204,36 @@ abstract class AbstractTest extends AbstractStaticTest
     }
 
     /**
+     * Returns the first method as a MethodNode for a given test file.
+     *
+     * @param string $file
+     * @return ClassNode
+     * @since 2.8.3
+     */
+    protected function getClassNodeForTestFile($file)
+    {
+        return new ClassNode(
+            $this->parseSource($file)
+                ->getTypes()
+                ->current()
+        );
+    }
+
+    /**
+     * Get the node for a given test file.
+     *
+     * This method can be overridden to select the node to test with the rule.
+     *
+     * @param string $file
+     *
+     * @return AbstractNode
+     */
+    protected function getNodeForTestFile($file)
+    {
+        return $this->getMethodNodeForTestFile($file);
+    }
+
+    /**
      * Test that a given file trigger N times the given rule.
      *
      * @param Rule $rule Rule to test.
@@ -213,7 +243,7 @@ abstract class AbstractTest extends AbstractStaticTest
     protected function expectRuleHasViolationsForFile(Rule $rule, $expectedInvokes, $file)
     {
         $rule->setReport($this->getReportMock($expectedInvokes));
-        $rule->apply($this->getMethodNodeForTestFile($file));
+        $rule->apply($this->getNodeForTestFile($file));
     }
 
     /**
@@ -348,7 +378,7 @@ abstract class AbstractTest extends AbstractStaticTest
      */
     protected function getReportMock($expectedInvokes = -1)
     {
-        if ($expectedInvokes === self::AL_LEAST_ONE_VIOLATION) {
+        if ($expectedInvokes === self::AT_LEAST_ONE_VIOLATION) {
             $expects = $this->atLeastOnce();
         } elseif ($expectedInvokes === self::NO_VIOLATION) {
             $expects = $this->never();
@@ -392,7 +422,7 @@ abstract class AbstractTest extends AbstractStaticTest
      */
     public function getReportWithAtLeastOneViolation()
     {
-        return $this->getReportMock(self::AL_LEAST_ONE_VIOLATION);
+        return $this->getReportMock(self::AT_LEAST_ONE_VIOLATION);
     }
 
     protected function getMockFromBuilder(PHPUnit_Framework_MockObject_MockBuilder $builder)
@@ -428,17 +458,16 @@ abstract class AbstractTest extends AbstractStaticTest
     protected function getRuleSetMock($expectedClass = null, $count = '*')
     {
         $ruleSet = $this->getMockFromBuilder($this->getMockBuilder('PHPMD\RuleSet'));
+
         if ($expectedClass === null) {
             $ruleSet->expects($this->never())->method('apply');
 
             return $ruleSet;
         }
 
-        if ($count === '*') {
-            $count = $this->atLeastOnce();
-        } else {
-            $count = $this->exactly($count);
-        }
+        $count = $count === '*'
+            ? $this->atLeastOnce()
+            : $this->exactly($count);
 
         $ruleSet->expects($count)
             ->method('apply')

@@ -15,7 +15,7 @@
  * @link http://phpmd.org/
  */
 
-class testRuleDoesNotResultInFatalErrorByCallingNonObject
+class testRuleAppliesWhenCallingNonObject
 {
     private $foo = null;
 
