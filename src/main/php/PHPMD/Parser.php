@@ -18,6 +18,7 @@
 
 namespace PHPMD;
 
+use ArrayIterator;
 use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
@@ -81,6 +82,7 @@ final class Parser extends AbstractASTVisitor implements CodeAwareGenerator
      */
     public function __construct(
         private readonly Engine $pdepend,
+        private readonly ArrayIterator $files,
     ) {
     }
 
@@ -94,11 +96,20 @@ final class Parser extends AbstractASTVisitor implements CodeAwareGenerator
         $this->setReport($report);
 
         $this->pdepend->addReportGenerator($this);
-        $this->pdepend->analyze();
+        foreach ($this->files as $file) {
+            $pdepend = clone $this->pdepend;
+            $pdepend->addFile($file);
+            $pdepend->analyze();
 
-        foreach ($this->pdepend->getExceptions() as $exception) {
-            $report->addError(new ProcessingError($exception->getMessage()));
+            foreach ($pdepend->getExceptions() as $exception) {
+                $report->addError(new ProcessingError($exception->getMessage()));
+            }
         }
+//        $this->pdepend->analyze();
+//
+//        foreach ($this->pdepend->getExceptions() as $exception) {
+//            $report->addError(new ProcessingError($exception->getMessage()));
+//        }
     }
 
     /**

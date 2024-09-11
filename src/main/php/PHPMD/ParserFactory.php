@@ -18,18 +18,27 @@
 
 namespace PHPMD;
 
+use AppendIterator;
+use ArrayIterator;
 use Exception;
+use GlobIterator;
 use InvalidArgumentException;
 use PDepend\Application;
 use PDepend\Engine;
+use PDepend\Input\CompositeFilter;
 use PDepend\Input\ExcludePathFilter;
 use PDepend\Input\ExtensionFilter;
+use PDepend\Input\Iterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileObject;
 
 /**
  * Simple factory that is used to return a ready to use PDepend instance.
  */
 final class ParserFactory
 {
+
     /** @var string The default config file name */
     private const PDEPEND_CONFIG_FILE_NAME = '/pdepend.xml';
 
@@ -45,6 +54,9 @@ final class ParserFactory
         'coverage' => 'coverage-report',
     ];
 
+    /** Prefix for PHP streams. */
+    protected string $phpStreamPrefix = 'php://';    /** A composite filter for input files. */
+
     /**
      * Creates the used {@link \PHPMD\Parser} analyzer instance.
      *
@@ -55,7 +67,8 @@ final class ParserFactory
         $pdepend = $this->createInstance();
         $pdepend = $this->init($pdepend, $phpmd);
 
-        return new Parser($pdepend);
+//        return new Parser($pdepend);
+        return new Parser($pdepend, $this->createFileIterator($phpmd));
     }
 
     /**
@@ -85,7 +98,7 @@ final class ParserFactory
     private function init(Engine $pdepend, PHPMD $phpmd): Engine
     {
         $this->initOptions($pdepend, $phpmd);
-        $this->initInput($pdepend, $phpmd);
+//        $this->initInput($pdepend, $phpmd);
         $this->initIgnores($pdepend, $phpmd);
         $this->initExtensions($pdepend, $phpmd);
         $this->initResultCache($pdepend, $phpmd);
@@ -110,6 +123,8 @@ final class ParserFactory
             $pdepend->addFile($trimmedPath);
         }
     }
+
+
 
     /**
      * Initializes the ignored files and path's.
@@ -158,5 +173,54 @@ final class ParserFactory
             }
         }
         $pdepend->setOptions($options);
+    }
+
+    private function createFileIterator(PHPMD $phpmd): ArrayIterator
+    {
+        $fileIterator = new AppendIterator();
+
+        $fileFilter = new CompositeFilter();
+
+        foreach (explode(',', $phpmd->getInput()) as $path) {
+            $trimmedPath = trim($path);
+            if (is_dir($trimmedPath)) {
+                $fileIterator->append(
+                    new Iterator(
+                        new RecursiveIteratorIterator(
+                            new RecursiveDirectoryIterator(
+                                $trimmedPath . '/',
+                                RecursiveDirectoryIterator::FOLLOW_SYMLINKS,
+                            ),
+                        ),
+                        $fileFilter,
+                        $trimmedPath,
+                    ),
+                );
+                continue;
+            }
+            $fileIterator->append(
+                $this->isPhpStream($trimmedPath)
+                    ? new ArrayIterator([new SplFileObject($trimmedPath)])
+                    : new Iterator(new GlobIterator($trimmedPath), $fileFilter),
+            );
+        }
+        $files = [];
+        foreach ($fileIterator as $file) {
+            if (is_string($file)) {
+                $files[$file] = $file;
+            } else {
+                $pathname = $file->getRealPath() ?: $file->getPathname();
+                $files[$pathname] = $pathname;
+            }
+        }
+
+        ksort($files);
+
+        return new ArrayIterator(array_values($files));
+    }
+
+    private function isPhpStream(string $path): bool
+    {
+        return str_starts_with($path, $this->phpStreamPrefix);
     }
 }
